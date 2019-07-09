@@ -211,7 +211,7 @@ def start(String configFile) {
         println "pipeline config ==> ${config}"
 
         def pwd = pwd()
-        def chart_dir = "${pwd}/${config.app.name}"
+        def chart_dir = "${pwd}/helm/${config.app.name}"
 
         // notifyBuild(
         //   branch_name      : config.BRANCH_NAME,
