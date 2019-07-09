@@ -265,7 +265,7 @@ def start(String configFile) {
       sh "${scannerHome}/bin/sonar-scanner"
     }
   }
-}
+
           
         stage ('Test Helm Chart Deployment') {
           container('helm') {
