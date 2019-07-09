@@ -258,6 +258,21 @@ def start(String configFile) {
         throw(exc)
         }
       }
+          
+          stage('SonarQube analysis') {
+            steps { 
+             script {
+          // requires SonarQube Scanner 2.8+
+          scannerHome = tool 'sonar3'
+        }
+            withSonarQubeEnv('SonarQube') {
+      // requires SonarQube Scanner for Gradle 2.1+
+      // It's important to add --info because of SONARJNKNS-281
+              sh "${scannerHome}/bin/sonar-scanner"
+            // sh './gradlew --info sonarqube'
+       }
+   }
+}
 
         stage ('Test Helm Chart Deployment') {
           container('helm') {
