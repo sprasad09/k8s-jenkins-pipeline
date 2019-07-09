@@ -260,8 +260,9 @@ def start(String configFile) {
       }
           
           stage('SonarQube analysis') {
-            steps { 
-             script {
+            container('gradle') {
+              steps { 
+                script {
           // requires SonarQube Scanner 2.8+
           scannerHome = tool 'sonar3'
         }
@@ -273,7 +274,8 @@ def start(String configFile) {
        }
    }
 }
-
+          }
+          
         stage ('Test Helm Chart Deployment') {
           container('helm') {
             // run helm chart linter
