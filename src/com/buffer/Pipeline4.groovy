@@ -292,6 +292,14 @@ def start(String configFile) {
             )
           }
         }
+          
+       
+          stage('SonarQube analysis') {
+    def scannerHome = tool 'sonar3';
+    withSonarQubeEnv('SonarQube') { // If you have configured more than one global server connection, you can specify its name
+      sh "${scannerHome}/bin/sonar-scanner"
+    }
+  }
 
         stage ('Deploy to k8s with Helm') {
           container('helm') {
