@@ -111,19 +111,9 @@ def helmLint(String chart_dir) {
 
 def shortenLongReleaseName(String branchName, String chartName) {
   def releaseName = "${branchName}-${chartName}"
-  def resourceName = "${branchName}-${chartName}-${chartName}"
-
-  def allowedLength = releaseName.length()
-  if (releaseName.length() > 53 || resourceName.length() > 63) {
-    allowedLength = (chartName.length() + 1) < 10 ? 53 : (63 - (chartName.length() + 1))
-    // reserved for suffix like '-cip'
-    allowedLength = allowedLength - 5
-    println "Shortned the release name to length: ${allowedLength}"
+  if (releaseName.length() > 63) {
+    releaseName = releaseName.substring(0, 63)
   }
-
-  releaseName = releaseName.substring(0, allowedLength)
-  // remove trailing -, if any
-  releaseName = releaseName.replaceAll('-+$', '')
 
   return releaseName
 }
@@ -132,14 +122,12 @@ def helmDeploy(Map args) {
     //configure helm client and confirm tiller process is installed
     helmConfig()
 
-    def overrides = "image.tag=${args.version_tag},track=staging,branchName=${args.branch_name},branchSubdomain=${args.branch_name}-"
+    def overrides = "image.tag=${args.version_tag},track=staging,branchName=${args.branch_name},branchSubdomain=${args.branch_name}."
     def releaseName = shortenLongReleaseName(args.branch_name, args.name)
 
     // Master for prod deploy w/o ingress (using it's own ELB)
     if (args.branch_name == 'master') {
       overrides = "${overrides},ingress.enabled=false,track=stable,branchSubdomain=''"
-    } else {
-      args.namespace = "dev"
     }
 
     if (args.dry_run) {
@@ -204,10 +192,11 @@ def notifyBuild(Map args) {
 def start(String configFile) {
 
     podTemplate(label: 'pipeline-pod', containers: [
+        containerTemplate(name: 'gradle', image: 'gradle:5.4.1-jdk8', command: 'cat', ttyEnabled: true),
         containerTemplate(name: 'docker', image: 'docker:17.06.0', ttyEnabled: true, command: 'cat'),
-        containerTemplate(name: 'helm', image: 'lachlanevenson/k8s-helm:v2.6.2', ttyEnabled: true, command: 'cat'),
-        containerTemplate(name: 'kubectl', image: 'lachlanevenson/k8s-kubectl:v1.8.0', ttyEnabled: true, command: 'cat'),
-        containerTemplate(name: 'node', image: 'node:8.1.3', ttyEnabled: true, command: 'cat')
+        containerTemplate(name: 'helm', image: 'lachlanevenson/k8s-helm:v2.13.1', ttyEnabled: true, command: 'cat'),
+        containerTemplate(name: 'kubectl', image: 'lachlanevenson/k8s-kubectl:v1.11.9', ttyEnabled: true, command: 'cat'),
+        containerTemplate(name: 'node', image: 'node:10.15.3-alpine', ttyEnabled: true, command: 'cat')
     ],
     volumes:[
         hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
@@ -223,7 +212,7 @@ def start(String configFile) {
         println "pipeline config ==> ${config}"
 
         def pwd = pwd()
-        def chart_dir = "${pwd}/${config.app.name}"
+        def chart_dir = "${pwd}/helm/${config.app.name}"
 
         // notifyBuild(
         //   branch_name      : config.BRANCH_NAME,
@@ -257,7 +246,8 @@ def start(String configFile) {
 
         // compile tag list
         def image_tags_list = getMapValues(image_tags_map)
-
+          
+         
         stage ('Test Helm Chart Deployment') {
           container('helm') {
             // run helm chart linter
